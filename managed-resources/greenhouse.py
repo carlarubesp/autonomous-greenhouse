@@ -54,8 +54,70 @@ class Greenhouse:
         if topic == "greenhouse/actuators/commands":
             self.apply_action(msg.payload.decode("utf-8"))
 
-    # TODO: Update internal clock and use helper functions
+    # TODO: Finish next function with helper functions to change the temperature
     def next(self):
+        if self.clock >= 1440:
+            self.clock = 0
+            self.isDay = True
+
+        if self.clock >= 720:
+            self.isDay = False
+
+        self.clock += 1
+
+    def change_temperature(self):
+        outside_temp_day = 35.0
+        outside_temp_night = 8.0
+
+        if self.isDay:
+            temp_change = (outside_temp_day - self.temperature) * 0.07
+        else:
+            temp_change = (outside_temp_night - self.temperature) * 0.07
+
+        if self.heater:
+            temp_change += 0.5
+        if self.fan:
+            temp_change -= 0.3
+
+        return max(min(self.temperature + temp_change + random.uniform(-0.15, 0.15), 40), -5)
+
+    def change_rel_humidity(self):
+        rel_humidity_day = 55.0
+        rel_humidity_night = 80.0
+
+        if self.isDay:
+            humidity_change = (rel_humidity_day - self.rel_humidity) * 0.07
+        else:
+            humidity_change = (rel_humidity_night - self.rel_humidity) * 0.07
+
+        if self.heater:
+            humidity_change -= 0.12
+        if self.sprinklers:
+            humidity_change += 0.16
+
+        return max(min(self.rel_humidity + humidity_change + random.uniform(-0.2, 0.2), 100), 0)
+
+    def change_soil_humidity(self):
+        soil_humid_tendency = 25
+        humidity_change = (soil_humid_tendency - self.soil_humidity) * 0.08
+
+        if self.heater:
+            humidity_change -= 0.3
+        if self.sprinklers:
+            humidity_change += 0.37
+        if self.water_pump:
+            humidity_change += 0.4
+
+        return max(min(self.soil_humidity + humidity_change + random.uniform(-0.2, 0.2), 100), 0)
+
+    # TODO: Last 3 helper functions
+    def change_co2(self):
+        pass
+
+    def change_ph(self):
+        pass
+
+    def change_conductivity(self):
         pass
 
     def read_sensors(self):
@@ -70,9 +132,46 @@ class Greenhouse:
             "conductivity": round(self.conductivity, 2)
         }
 
-    # TODO: see which MQTT commands can activate the actuators.
     def apply_action(self, action):
-        pass
+        if action == "HEATER_ON":
+            self.heater = True
+        elif action == "HEATER_OFF":
+            self.heater = False
+
+        elif action == "FAN_ON":
+            self.fan = True
+        elif action == "FAN_OFF":
+            self.fan = False
+
+        elif action == "SPRINKLERS_ON":
+            self.sprinklers = True
+        elif action == "SPRINKLERS_OFF":
+            self.sprinklers = False
+
+        elif action == "WATER_PUMP_ON":
+            self.water_pump = True
+        elif action == "WATER_PUMP_OFF":
+            self.water_pump = False
+
+        elif action == "CO2_ON":
+            self.co2_injector = True
+        elif action == "CO2_OFF":
+            self.co2_injector = False
+
+        elif action == "ACID_DOSING_ON":
+            self.acid_dosing = True
+        elif action == "ACID_DOSING_OFF":
+            self.acid_dosing = False
+
+        elif action == "BASE_DOSING_ON":
+            self.base_dosing = True
+        elif action == "BASE_DOSING_OFF":
+            self.base_dosing = False
+
+        elif action == "NUTRIENT_ON":
+            self.nutrient_dosing = True
+        elif action == "NUTRIENT_OFF":
+            self.nutrient_dosing = False
 
     def start(self):
         client = mqtt.Client()
