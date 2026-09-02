@@ -3,6 +3,7 @@ import json
 import random
 import configparser
 import paho.mqtt.client as mqtt
+from calculate_metrics import CalculateMetrics
 
 # Load IPs and ports from a static file
 config = configparser.ConfigParser()
@@ -21,13 +22,13 @@ class Greenhouse:
         self.temperature = 20.0
         self.rel_humidity = 70.0
         self.soil_humidity = 40.0
-        self.CO2 = 800.0
-        self.pH = 6.0
+        self.co2 = 800.0
+        self.ph = 6.0
         self.conductivity = 2.0
 
         # Internal clock (1 tick = 1 minute)
         self.clock = 0
-        self.isDay = True
+        self.is_day = True
 
         # Actuators
         self.heater = False
@@ -54,81 +55,45 @@ class Greenhouse:
         if topic == "greenhouse/actuators/commands":
             self.apply_action(msg.payload.decode("utf-8"))
 
-    # TODO: Finish next function with helper functions to change the temperature
     def next(self):
         if self.clock >= 1440:
             self.clock = 0
-            self.isDay = True
+            self.is_day = True
 
         if self.clock >= 720:
-            self.isDay = False
+            self.is_day = False
 
         self.clock += 1
 
-    def change_temperature(self):
-        outside_temp_day = 35.0
-        outside_temp_night = 8.0
+        self.temperature = CalculateMetrics.change_temperature(
+            self.temperature, self.is_day, self.heater, self.fan
+        )
+        self.rel_humidity = CalculateMetrics.change_rel_humidity(
+            self.rel_humidity, self.is_day, self.heater, self.sprinklers
+        )
+        self.soil_humidity = CalculateMetrics.change_soil_humidity(
+            self.soil_humidity, self.heater, self.sprinklers, self.water_pump
+        )
+        self.co2 = CalculateMetrics.change_co2(
+            self.co2, self.is_day, self.fan, self.co2_injector
+        )
+        self.ph = CalculateMetrics.change_ph(
+            self.ph, self.acid_dosing, self.base_dosing
+        )
+        self.conductivity = CalculateMetrics.change_conductivity(
+            self.conductivity, self.nutrient_dosing, self.water_pump
+        )
 
-        if self.isDay:
-            temp_change = (outside_temp_day - self.temperature) * 0.07
-        else:
-            temp_change = (outside_temp_night - self.temperature) * 0.07
-
-        if self.heater:
-            temp_change += 0.5
-        if self.fan:
-            temp_change -= 0.3
-
-        return max(min(self.temperature + temp_change + random.uniform(-0.15, 0.15), 40), -5)
-
-    def change_rel_humidity(self):
-        rel_humidity_day = 55.0
-        rel_humidity_night = 80.0
-
-        if self.isDay:
-            humidity_change = (rel_humidity_day - self.rel_humidity) * 0.07
-        else:
-            humidity_change = (rel_humidity_night - self.rel_humidity) * 0.07
-
-        if self.heater:
-            humidity_change -= 0.12
-        if self.sprinklers:
-            humidity_change += 0.16
-
-        return max(min(self.rel_humidity + humidity_change + random.uniform(-0.2, 0.2), 100), 0)
-
-    def change_soil_humidity(self):
-        soil_humid_tendency = 25
-        humidity_change = (soil_humid_tendency - self.soil_humidity) * 0.08
-
-        if self.heater:
-            humidity_change -= 0.3
-        if self.sprinklers:
-            humidity_change += 0.37
-        if self.water_pump:
-            humidity_change += 0.4
-
-        return max(min(self.soil_humidity + humidity_change + random.uniform(-0.2, 0.2), 100), 0)
-
-    # TODO: Last 3 helper functions
-    def change_co2(self):
-        pass
-
-    def change_ph(self):
-        pass
-
-    def change_conductivity(self):
-        pass
 
     def read_sensors(self):
         return {
             "clock": self.clock,
-            "is day?": self.isDay,
+            "is day?": self.is_day,
             "temperature": round(self.temperature, 2),
             "relative humidity": round(self.rel_humidity, 2),
             "soil humidity": round(self.soil_humidity, 2),
-            "CO2": round(self.CO2, 2),
-            "pH": round(self.pH, 2),
+            "CO2": round(self.co2, 2),
+            "pH": round(self.ph, 2),
             "conductivity": round(self.conductivity, 2)
         }
 
