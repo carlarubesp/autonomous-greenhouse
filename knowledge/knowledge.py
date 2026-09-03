@@ -2,6 +2,8 @@ import configparser
 import json
 import uvicorn
 from fastapi import FastAPI
+from readSensors import ReadSensors
+from updateActuators import UpdateActuators
 
 config = configparser.ConfigParser()
 config.read("../greenhouse.conf")
@@ -12,33 +14,44 @@ app = FastAPI(title="Knowledge")
 with open("../thresholds.json", "r") as f:
     thresholds = json.load(f)
 
+short_term_memory = []
+actuators_state = {
+    "heater": False,
+    "fan": False,
+    "sprinklers": False,
+    "co2_injector": False,
+    "water_pump": False,
+    "acid_dosing": False,
+    "base_dosing": False,
+    "nutrient_dosing": False
+}
+
 @app.get("/thresholds")
 def get_thresholds():
     return thresholds
 
 @app.post("/sensors")
-async def add_sensors_info(info: dict):
-    pass
-
-@app.get("/sensors")
-async def get_sensors():
-    pass
+async def add_sensors_info(information: ReadSensors):
+    short_term_memory.append(information)
+    return short_term_memory
 
 @app.get("/short-term")
 def get_short_term_memory():
-    pass
+    return short_term_memory
 
 @app.post("/actuators")
-def add_actuators_info(info: dict):
-    pass
+def add_actuators_info(update: UpdateActuators):
+    changes = update.model_dump(exclude_none=True)
+    actuators_state.update(changes)
+    return actuators_state
 
 @app.get("/actuators")
 def get_actuators():
-    pass
+    return actuators_state
 
 @app.post("/short-term/reset")
 def reset():
-    pass
+    short_term_memory.clear()
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=PORT)
