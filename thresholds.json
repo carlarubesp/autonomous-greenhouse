@@ -1,0 +1,39 @@
+{
+  "temperature": {
+    "day": {
+      "ideal": 22.0,
+      "secure": [18.0, 26.0],
+      "alarm": [12.0, 32.0]
+    },
+    "night": {
+      "ideal": 16.0,
+      "secure": [14.0, 18.0],
+      "alarm": [10.0, 22.0]
+    }
+  },
+  "relative_humidity": {
+    "ideal": 70.0,
+    "secure": [60.0, 80.0],
+    "alarm": [50.0, 85.0]
+  },
+  "soil_humidity": {
+    "ideal": 40.0,
+    "secure": [30.0, 60.0],
+    "alarm": [20.0, 80.0]
+  },
+  "co2": {
+    "ideal" : 800.0,
+    "secure": [400.0, 1000.0],
+    "alarm": [350.0, 1500.0]
+  },
+  "ph": {
+    "ideal": 6.0,
+    "secure": [5.5, 6.5],
+    "alarm": [5.0, 7.0]
+  },
+  "conductivity": {
+    "ideal": 2.0,
+    "secure": [1.5, 2.5],
+    "alarm": [1.0, 3.5]
+  }
+}
