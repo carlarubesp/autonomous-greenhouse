@@ -24,19 +24,37 @@ class Monitor:
 
     def on_message(self, client, userdata, message):
         msg = message.payload.decode("utf-8")
-        pass
+
+        if message.topic == "greenhouse/sensors/status":
+            self.insert_sensors_info(msg)
+            print("Sensors info inserted")
+            self.command_analyzer()
+
+        elif message.topic == "greenhouse/reset":
+            self.reset_knowledge()
+            print("Knowledge reset")
 
     def command_analyzer(self):
-        pass
+        self.client.publish("greenhouse/monitor/command", "start")
+        print("Commanded Analyzer to start analyzing")
 
     def insert_sensors_info(self, sensors_info):
-        pass
+        requests.post(url=f"{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/sensors",
+                      data=sensors_info)
+        print(f"{sensors_info}")
 
     def reset_knowledge(self):
-        pass
+        requests.post(url=f"{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/short-term/reset")
+        print("Knowledge reset")
 
     def start(self):
-        pass
+        self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message
+
+        # Connect to the mqtt broker
+        self.client.connect(MQTT_BROKER, MQTT_PORT)
+        self.client.subscribe(MQTT_TOPICS)
+        self.client.loop_forever()
 
 if __name__ == "__main__":
     monitor = Monitor()
