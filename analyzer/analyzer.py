@@ -11,7 +11,9 @@ MQTT_BROKER = config.get("mqtt_broker", "broker_name")
 MQTT_PORT = config.getint("mqtt_broker", "port")
 KNOWLEDGE_HOST = config.get("knowledge", "host")
 KNOWLEDGE_PORT = config.getint("knowledge", "port")
-TOPIC = "greenhouse/monitor/command"
+
+MQTT_TOPICS = [("greenhouse/monitor/command", 0),
+               ("greenhouse/reset", 0)]
 
 with open("../thresholds.json", "r") as f:
     thresholds = json.load(f)
@@ -28,23 +30,34 @@ class Analyzer:
         if rc == 0:
             print("Connected to broker.")
         else:
-            print("Connection failed.")
+            client.reconnect_delay_set(min_delay=1, max_delay=30)
 
     def on_message(self, client, userdata, message):
         msg = message.payload.decode('utf-8')
-        if message.topic == TOPIC and msg == "start":
-            self.analyze()
+        if message.topic == "greenhouse/monitor/command" and msg == "start":
+            res = self.analyze()
+            if res:
+                print("Information analyzed and classified.")
+                self.command_planner()
+
+        elif message.topic == "greenhouse/reset":
+            self.reset_knowledge()
+            print("Knowledge reset")
+
+    def command_planner(self):
+        self.client.publish("greenhouse/analyzer/command", "start")
+        print("Commanded Planner to start planning")
 
     def get_sensors_info(self):
         # Returns the short-term memory list that compiles together
         # all the sensors until that point
-        sensors_info = f"{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/short-term"
+        sensors_info = f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/short-term"
         response = requests.get(sensors_info)
         return response.json()
 
     def check_sensors(self, sensors_info):
         if not sensors_info:
-            return None
+            return False
 
         last_min = sensors_info[-1]
         is_day = last_min["is_day"]
@@ -55,19 +68,20 @@ class Analyzer:
 
             value = last_min[metric]
 
-            if "day" in limits:
+            if "day" in limits and "night" in limits:
                 alarm_min, alarm_max = limits["day" if is_day else "night"]["alarm"]
             else:
                 alarm_min, alarm_max = limits["alarm"]
 
             if value > alarm_max or value < alarm_min:
+                print(f"ALARM: {metric}={value} outside of [{alarm_min}, {alarm_max}]")
                 return True
 
         return False
 
     def check_symptoms(self, sensors_info):
         if not sensors_info:
-            return None
+            return []
 
         last_min = sensors_info[-1]
         detected = []
@@ -80,7 +94,7 @@ class Analyzer:
 
     def twenty_min_average(self, sensors_info):
         temperature = 0
-        rel_humidity = 0
+        relative_humidity = 0
         soil_humidity = 0
         co2 = 0
         ph = 0
@@ -95,7 +109,7 @@ class Analyzer:
 
         for elem in sensors_info:
             temperature += elem["temperature"]
-            rel_humidity += elem["rel_humidity"]
+            relative_humidity += elem["relative_humidity"]
             soil_humidity += elem["soil_humidity"]
             co2 += elem["co2"]
             ph += elem["ph"]
@@ -103,7 +117,7 @@ class Analyzer:
 
         avg = {
             "temperature": temperature / len(sensors_info),
-            "rel_humidity": rel_humidity / len(sensors_info),
+            "relative_humidity": relative_humidity / len(sensors_info),
             "soil_humidity": soil_humidity / len(sensors_info),
             "co2": co2 / len(sensors_info),
             "ph": ph / len(sensors_info),
@@ -134,30 +148,38 @@ class Analyzer:
         return trends
 
     def reset_knowledge(self):
-        requests.post(url=f"{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/short-term/reset")
+        requests.post(url=f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/short-term/reset")
         print("Knowledge reset")
 
     def analyze(self):
         sensors_info = self.get_sensors_info()
         if not sensors_info:
-            return
+            print("No sensor data available.")
+            return False
+
+        found = False
 
         if self.check_sensors(sensors_info):
             print("Alarm state reached. There is a metric completely out of range.")
+            found = True
 
         detected = self.check_symptoms(sensors_info)
         if detected:
             print("Symptoms detected: ", detected)
+            found = True
 
         trends = self.check_tendency(sensors_info)
         if trends:
             print("Tendency detected: ", trends)
+            found = True
+
+        return found
 
     def start(self):
         self.client.connect(MQTT_BROKER, MQTT_PORT)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
-        self.client.subscribe(TOPIC)
+        self.client.subscribe(MQTT_TOPICS)
         self.client.loop_forever()
 
 if __name__ == "__main__":
