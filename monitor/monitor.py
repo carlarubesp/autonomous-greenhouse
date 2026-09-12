@@ -1,6 +1,7 @@
 import requests
 import paho.mqtt.client as mqtt
 import configparser
+import json
 
 config = configparser.ConfigParser()
 config.read('../greenhouse.conf')
@@ -39,12 +40,12 @@ class Monitor:
         print("Commanded Analyzer to start analyzing")
 
     def insert_sensors_info(self, sensors_info):
-        requests.post(url=f"{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/sensors",
-                      data=sensors_info)
+        requests.post(url=f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/sensors",
+                      json=json.loads(sensors_info))
         print(f"{sensors_info}")
 
     def reset_knowledge(self):
-        requests.post(url=f"{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/short-term/reset")
+        requests.post(url=f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/short-term/reset")
         print("Knowledge reset")
 
     def start(self):

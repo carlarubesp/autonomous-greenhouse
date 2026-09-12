@@ -1,11 +1,11 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 class ReadSensors(BaseModel):
     clock: int
-    is_day: bool = Field(alias="is day?")
+    is_day: bool
     temperature: float
-    relative_humidity: float = Field(alias="relative humidity")
-    soil_humidity: float = Field(alias="soil humidity")
-    co2: float = Field(alias="CO2")
-    ph: float = Field(alias="pH")
+    relative_humidity: float
+    soil_humidity: float
+    co2: float
+    ph: float
     conductivity: float

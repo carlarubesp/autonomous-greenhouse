@@ -88,12 +88,12 @@ class Greenhouse:
     def read_sensors(self):
         return {
             "clock": self.clock,
-            "is day?": self.is_day,
+            "is_day": self.is_day,
             "temperature": round(self.temperature, 2),
-            "relative humidity": round(self.rel_humidity, 2),
-            "soil humidity": round(self.soil_humidity, 2),
-            "CO2": round(self.co2, 2),
-            "pH": round(self.ph, 2),
+            "relative_humidity": round(self.rel_humidity, 2),
+            "soil_humidity": round(self.soil_humidity, 2),
+            "co2": round(self.co2, 2),
+            "ph": round(self.ph, 2),
             "conductivity": round(self.conductivity, 2)
         }
 
