@@ -31,8 +31,10 @@ def get_thresholds():
     return thresholds
 
 @app.post("/sensors")
-async def add_sensors_info(information: ReadSensors):
+def add_sensors_info(information: ReadSensors):
     short_term_memory.append(information)
+    if len(short_term_memory) > 20:
+        short_term_memory.pop(0)
     return short_term_memory
 
 @app.get("/short-term")
