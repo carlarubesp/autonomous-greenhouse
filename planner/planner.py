@@ -28,7 +28,12 @@ class Planner:
             client.reconnect_delay_set(min_delay=1, max_delay=30)
 
     def on_message(self, client, userdata, message):
-        pass
+        if message.topic == "greenhouse/analyzer/command":
+            diagnosis = json.loads(message.payload.decode("utf-8"))
+            self.build_plan(diagnosis)
+
+        elif message.topic == "greenhouse/reset":
+            print("Planner received reset.")
 
     def get_actuators(self):
         actuators_info = f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/actuators"
@@ -36,11 +41,35 @@ class Planner:
         return response.json()
 
     def apply_hysteresis(self, current_state, value, limits, increases):
-        pass
+        low, high = limits["secure"]
+        ideal = limits["ideal"]
+
+        if increases:
+            if current_state:
+                return value < ideal
+            else:
+                return value < low
+        else:
+            if current_state:
+                return value > ideal
+            else:
+                return value > high
 
     def consider(self, actuator, metric_name, value, limits, increases,
                  plan, claimed, reasons):
-        pass
+        if actuator in claimed:
+            return
+
+        previous = plan[actuator]
+        desired = self.apply_hysteresis(previous, value, limits, increases)
+        plan[actuator] = desired
+        claimed.add(actuator)
+
+        if desired != previous:
+            reasons.append(
+                f"{metric_name}={value:.2f} -> {actuator} "
+                f"{'ON' if desired else 'OFF'}"
+            )
 
     def build_plan(self, diagnosis):
         pass
