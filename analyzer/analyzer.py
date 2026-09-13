@@ -33,19 +33,20 @@ class Analyzer:
             client.reconnect_delay_set(min_delay=1, max_delay=30)
 
     def on_message(self, client, userdata, message):
-        msg = message.payload.decode('utf-8')
+        msg = message.payload.decode('utf-8').strip()
+
         if message.topic == "greenhouse/monitor/command" and msg == "start":
-            res = self.analyze()
-            if res:
+            diagnosis = self.analyze()
+            if diagnosis:
                 print("Information analyzed and classified.")
-                self.command_planner()
+                self.command_planner(diagnosis)
 
         elif message.topic == "greenhouse/reset":
             self.reset_knowledge()
             print("Knowledge reset")
 
-    def command_planner(self):
-        self.client.publish("greenhouse/analyzer/command", "start")
+    def command_planner(self, diagnosis):
+        self.client.publish("greenhouse/analyzer/command", json.dumps(diagnosis))
         print("Commanded Planner to start planning")
 
     def get_sensors_info(self):
@@ -155,25 +156,32 @@ class Analyzer:
         sensors_info = self.get_sensors_info()
         if not sensors_info:
             print("No sensor data available.")
-            return False
+            return None
 
-        found = False
+        last = sensors_info[-1]
 
-        if self.check_sensors(sensors_info):
+        has_alarm = self.check_sensors(sensors_info)
+        if has_alarm:
             print("Alarm state reached. There is a metric completely out of range.")
-            found = True
 
-        detected = self.check_symptoms(sensors_info)
-        if detected:
-            print("Symptoms detected: ", detected)
-            found = True
+        symptoms = self.check_symptoms(sensors_info)
+        if symptoms:
+            print("Symptoms detected: ", symptoms)
 
         trends = self.check_tendency(sensors_info)
         if trends:
             print("Tendency detected: ", trends)
-            found = True
 
-        return found
+        diagnosis = {
+            "clock": last["clock"],
+            "is_day": last["is_day"],
+            "reading": last,
+            "alarm": has_alarm,
+            "symptoms": symptoms,
+            "trends": trends,
+        }
+
+        return diagnosis
 
     def start(self):
         self.client.connect(MQTT_BROKER, MQTT_PORT)
