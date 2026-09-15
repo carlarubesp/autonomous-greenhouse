@@ -1,0 +1,58 @@
+import paho.mqtt.client as mqtt
+import requests
+import json
+import configparser
+
+config = configparser.ConfigParser()
+config.read('../greenhouse.conf')
+
+MQTT_BROKER = config.get("mqtt_broker", "broker_name")
+MQTT_PORT = config.getint("mqtt_broker", "port")
+KNOWLEDGE_HOST = config.get("knowledge", "host")
+KNOWLEDGE_PORT = config.getint("knowledge", "port")
+
+MQTT_TOPICS = [("greenhouse/planner/plan", 0),
+               ("greenhouse/reset", 0)]
+
+ACTUATOR_COMMANDS = {
+    "heater":          ("HEATER_ON",          "HEATER_OFF"),
+    "fan":             ("FAN_ON",             "FAN_OFF"),
+    "sprinklers":      ("SPRINKLERS_ON",      "SPRINKLERS_OFF"),
+    "co2_injector":    ("CO2_ON",             "CO2_OFF"),
+    "water_pump":      ("WATER_PUMP_ON",      "WATER_PUMP_OFF"),
+    "acid_dosing":     ("ACID_DOSING_ON",     "ACID_DOSING_OFF"),
+    "base_dosing":     ("BASE_DOSING_ON",     "BASE_DOSING_OFF"),
+    "nutrient_dosing": ("NUTRIENT_ON",        "NUTRIENT_OFF"),
+}
+
+class Executor:
+    def __init__(self):
+        self.client = mqtt.Client()
+
+    def on_connect(self, client, userdata, flags, rc):
+        if rc == 0:
+            print("Connected to broker.")
+        else:
+            client.reconnect_delay_set(min_delay=1, max_delay=30)
+
+    def on_message(self, client, userdata, message):
+        pass
+
+    def get_actuators(self):
+        pass
+
+    def update_actuators(self, changes):
+        pass
+
+    def execute(self, payload):
+        pass
+
+    def start(self):
+        self.client.connect(MQTT_BROKER, MQTT_PORT)
+        self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message
+        self.client.loop_forever()
+
+if __name__ == '__main__':
+    executor = Executor()
+    executor.start()

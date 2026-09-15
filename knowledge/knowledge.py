@@ -31,7 +31,7 @@ def get_thresholds():
     return thresholds
 
 @app.post("/sensors")
-def add_sensors_info(information: ReadSensors):
+def update_sensors(information: ReadSensors):
     short_term_memory.append(information)
     if len(short_term_memory) > 20:
         short_term_memory.pop(0)
@@ -42,7 +42,7 @@ def get_short_term_memory():
     return short_term_memory
 
 @app.post("/actuators")
-def add_actuators_info(update: UpdateActuators):
+def update_actuators(update: UpdateActuators):
     changes = update.model_dump(exclude_none=True)
     actuators_state.update(changes)
     return actuators_state
