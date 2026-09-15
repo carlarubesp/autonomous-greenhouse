@@ -49,11 +49,34 @@ class Executor:
         return response.json()
 
     def update_actuators(self, changes):
-        requests.post(f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/actuators",
+        return requests.post(f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/actuators",
                       json=changes)
 
     def execute(self, payload):
-        pass
+        plan = payload.get("plan", {})
+        if not plan:
+            return
+
+        current = self.get_actuators()
+        changes = {}
+
+        for actuator, desired in plan.items():
+            if actuator not in ACTUATOR_COMMANDS:
+                continue
+            desired = bool(desired)
+            if current.get(actuator, False) == desired:
+                continue
+
+            on_cmd, off_cmd = ACTUATOR_COMMANDS[actuator]
+            cmd = on_cmd if desired else off_cmd
+            self.client.publish("greenhouse/actuators/commands", cmd)
+            changes[actuator] = desired
+            print(f"Executed: {cmd}")
+
+        if not changes:
+            return
+
+        self.update_actuators(changes)
 
     def start(self):
         self.client.connect(MQTT_BROKER, MQTT_PORT)
