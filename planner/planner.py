@@ -72,7 +72,63 @@ class Planner:
             )
 
     def build_plan(self, diagnosis):
-        pass
+        reading = diagnosis["reading"]
+        is_day = reading["is_day"]
+
+        current = self.get_actuators()
+        if current is None:
+            print("Could not read actuator state, skipping plan.")
+            return
+
+        plan = dict(current)
+        claimed = set()
+        reasons = []
+
+        temp = reading["temperature"]
+        temp_limits = thresholds["temperature"]["day" if is_day else "night"]
+        self.consider("heater", "temperature", temp, temp_limits,
+                      increases=True, plan=plan, claimed=claimed, reasons=reasons)
+        self.consider("fan", "temperature", temp, temp_limits,
+                      increases=False, plan=plan, claimed=claimed, reasons=reasons)
+
+        ph = reading["ph"]
+        self.consider("acid_dosing", "ph", ph, thresholds["ph"],
+                      increases=False, plan=plan, claimed=claimed, reasons=reasons)
+        self.consider("base_dosing", "ph", ph, thresholds["ph"],
+                      increases=True, plan=plan, claimed=claimed, reasons=reasons)
+
+        sh = reading["soil_humidity"]
+        sh_limits = thresholds["soil_humidity"]
+        self.consider("water_pump", "soil_humidity", sh, sh_limits,
+                      increases=True, plan=plan, claimed=claimed, reasons=reasons)
+        self.consider("sprinklers", "soil_humidity", sh, sh_limits,
+                      increases=True, plan=plan, claimed=claimed, reasons=reasons)
+
+        rh = reading["relative_humidity"]
+        rh_limits = thresholds["relative_humidity"]
+        self.consider("sprinklers", "relative_humidity", rh, rh_limits,
+                      increases=True, plan=plan, claimed=claimed, reasons=reasons)
+
+        co2 = reading["co2"]
+        co2_limits = thresholds["co2"]
+        self.consider("co2_injector", "co2", co2, co2_limits,
+                      increases=True, plan=plan, claimed=claimed, reasons=reasons)
+
+        ce = reading["conductivity"]
+        ce_limits = thresholds["conductivity"]
+        self.consider("nutrient_dosing", "conductivity", ce, ce_limits,
+                      increases=True, plan=plan, claimed=claimed, reasons=reasons)
+
+        payload = {
+            "clock": diagnosis["clock"],
+            "plan": plan,
+            "reasons": reasons,
+        }
+        self.client.publish("greenhouse/planner/plan", json.dumps(payload))
+        if reasons:
+            print(f"Plan at clock {diagnosis['clock']}: {reasons}")
+        else:
+            print(f"Plan at clock {diagnosis['clock']}: no changes")
 
     def start(self):
         self.client.connect(MQTT_BROKER, MQTT_PORT)
