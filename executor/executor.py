@@ -36,13 +36,21 @@ class Executor:
             client.reconnect_delay_set(min_delay=1, max_delay=30)
 
     def on_message(self, client, userdata, message):
-        pass
+        if message.topic == "greenhouse/planner/plan":
+            payload = json.loads(message.payload.decode("utf-8"))
+            self.execute(payload)
+
+        elif message.topic == "greenhouse/reset":
+            print("Executor received reset.")
 
     def get_actuators(self):
-        pass
+        actuators = f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/actuators"
+        response = requests.get(actuators)
+        return response.json()
 
     def update_actuators(self, changes):
-        pass
+        requests.post(f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/actuators",
+                      json=changes)
 
     def execute(self, payload):
         pass
