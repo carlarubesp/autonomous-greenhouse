@@ -2,14 +2,15 @@ import paho.mqtt.client as mqtt
 import requests
 import json
 import configparser
+import os
 
 config = configparser.ConfigParser()
 config.read('../greenhouse.conf')
 
-MQTT_BROKER = config.get("mqtt_broker", "broker_name")
-MQTT_PORT = config.getint("mqtt_broker", "port")
-KNOWLEDGE_HOST = config.get("knowledge", "host")
-KNOWLEDGE_PORT = config.getint("knowledge", "port")
+MQTT_BROKER = os.getenv("MQTT_BROKER", config.get("mqtt_broker", "broker_name"))
+MQTT_PORT = int(os.getenv("MQTT_PORT", config.getint("mqtt_broker", "port")))
+KNOWLEDGE_HOST = os.getenv("KNOWLEDGE_HOST", config.get("knowledge", "host"))
+KNOWLEDGE_PORT = int(os.getenv("KNOWLEDGE_PORT", config.getint("knowledge", "port")))
 
 MQTT_TOPICS = [("greenhouse/analyzer/command", 0),
                ("greenhouse/reset", 0)]

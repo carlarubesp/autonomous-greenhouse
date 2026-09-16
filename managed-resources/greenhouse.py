@@ -4,14 +4,14 @@ import random
 import configparser
 import paho.mqtt.client as mqtt
 from calculate_metrics import CalculateMetrics
+import os
 
 # Load IPs and ports from a static file
 config = configparser.ConfigParser()
 config.read('../greenhouse.conf')
 
-MQTT_BROKER = config.get("mqtt_broker", "broker_name")
-MQTT_PORT = config.getint("mqtt_broker", "port")
-HOST = config.get("knowledge", "host")
+MQTT_BROKER = os.getenv("MQTT_BROKER", config.get("mqtt_broker", "broker_name"))
+MQTT_PORT = int(os.getenv("MQTT_PORT", config.getint("mqtt_broker", "port")))
 
 # Seed for reproducibility
 random.seed(42)

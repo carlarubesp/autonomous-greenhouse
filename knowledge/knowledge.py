@@ -4,10 +4,12 @@ import uvicorn
 from fastapi import FastAPI
 from readSensors import ReadSensors
 from updateActuators import UpdateActuators
+import os
 
 config = configparser.ConfigParser()
 config.read("../greenhouse.conf")
-PORT = config.getint("knowledge", "port")
+
+PORT = int(os.getenv("KNOWLEDGE_PORT", config.getint("knowledge", "port")))
 
 app = FastAPI(title="Knowledge")
 
