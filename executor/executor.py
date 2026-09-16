@@ -82,6 +82,7 @@ class Executor:
         self.client.connect(MQTT_BROKER, MQTT_PORT)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
+        self.client.subscribe(MQTT_TOPICS)
         self.client.loop_forever()
 
 if __name__ == '__main__':
