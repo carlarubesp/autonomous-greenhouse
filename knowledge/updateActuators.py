@@ -1,11 +1,12 @@
+from typing import Optional
 from pydantic import BaseModel
 
 class UpdateActuators(BaseModel):
-    heater: bool
-    fan: bool
-    sprinklers: bool
-    co2_injector: bool
-    water_pump: bool
-    acid_dosing: bool
-    base_dosing: bool
-    nutrient_dosing: bool
+    heater: Optional[bool] = None
+    fan: Optional[bool] = None
+    sprinklers: Optional[bool] = None
+    co2_injector: Optional[bool] = None
+    water_pump: Optional[bool] = None
+    acid_dosing: Optional[bool] = None
+    base_dosing: Optional[bool] = None
+    nutrient_dosing: Optional[bool] = None
