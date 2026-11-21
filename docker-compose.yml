@@ -9,7 +9,9 @@ services:
       - greenhouse-net
 
   knowledge:
-    build: ./knowledge
+    build:
+      context: .
+      dockerfile: knowledge/Dockerfile
     ports:
       - "5000:5000"
     volumes:
@@ -24,7 +26,9 @@ services:
       - greenhouse-net
 
   monitor:
-    build: ./monitor
+    build:
+      context: .
+      dockerfile: monitor/Dockerfile
     volumes:
       - ./greenhouse.conf:/greenhouse.conf
       - ./thresholds.json:/thresholds.json
@@ -41,7 +45,9 @@ services:
       - greenhouse-net
 
   analyzer:
-    build: ./analyzer
+    build:
+      context: .
+      dockerfile: analyzer/Dockerfile
     volumes:
       - ./greenhouse.conf:/greenhouse.conf
       - ./thresholds.json:/thresholds.json
@@ -58,7 +64,9 @@ services:
       - greenhouse-net
 
   planner:
-    build: ./planner
+    build:
+      context: .
+      dockerfile: planner/Dockerfile
     volumes:
       - ./greenhouse.conf:/greenhouse.conf
       - ./thresholds.json:/thresholds.json
@@ -75,7 +83,9 @@ services:
       - greenhouse-net
 
   executor:
-    build: ./executor
+    build:
+      context: .
+      dockerfile: executor/Dockerfile
     volumes:
       - ./greenhouse.conf:/greenhouse.conf
       - ./thresholds.json:/thresholds.json
@@ -92,7 +102,9 @@ services:
       - greenhouse-net
 
   simulator:
-    build: ./managed-resources
+    build:
+      context: .
+      dockerfile: managed-resources/Dockerfile
     volumes:
       - ./greenhouse.conf:/greenhouse.conf
       - ./thresholds.json:/thresholds.json
