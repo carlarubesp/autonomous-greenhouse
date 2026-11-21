@@ -36,6 +36,7 @@ communicate in two ways:
 - **Eclipse Mosquitto**: MQTT broker for the control plane
 - **FastAPI + Uvicorn**: REST API for the knowledge base
 - **Pydantic**: data validation
+- **uv**: dependency management, with versions pinned in `uv.lock`
 - **Docker + Docker Compose**: containerization and orchestration
 
 ## How to run
@@ -66,34 +67,34 @@ docker compose down
    sudo systemctl start mosquitto
    ```
 
-2. Create a virtual environment and install dependencies:
+2. Install [uv](https://docs.astral.sh/uv/) and the dependencies of all
+   services (versions are pinned in `uv.lock`):
 
    ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   pip install -r requirements.txt
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   uv sync --all-packages
    ```
 
 3. Start each component in its own terminal, in this order:
 
    ```bash
    # Terminal 1 — knowledge base
-   cd knowledge && uvicorn knowledge:app --host 0.0.0.0 --port 5000
+   cd knowledge && uv run uvicorn knowledge:app --host 0.0.0.0 --port 5000
 
    # Terminal 2 — monitor
-   cd monitor && python monitor.py
+   cd monitor && uv run python monitor.py
 
    # Terminal 3 — analyzer
-   cd analyzer && python analyzer.py
+   cd analyzer && uv run python analyzer.py
 
    # Terminal 4 — planner
-   cd planner && python planner.py
+   cd planner && uv run python planner.py
 
    # Terminal 5 — executor
-   cd executor && python executor.py
+   cd executor && uv run python executor.py
 
    # Terminal 6 — simulator
-   cd managed-resources && python greenhouse.py
+   cd managed-resources && uv run python greenhouse.py
    ```
 
 ## Components
@@ -119,8 +120,9 @@ docker compose down
     ├── docker-compose.yml     # Orchestrates the full pipeline
     ├── greenhouse.conf        # Shared configuration
     ├── mosquitto.conf         # Mosquitto configuration
-    ├── requirements.txt       # Python dependencies
-    └── thresholds.json        # Metric thresholds (ideal / secure / alarm)
+    ├── pyproject.toml         # uv workspace (one pyproject.toml per service)
+    ├── thresholds.json        # Metric thresholds (ideal / secure / alarm)
+    └── uv.lock                # Pinned versions of every dependency
 
 ## Design decisions
 

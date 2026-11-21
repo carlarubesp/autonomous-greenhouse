@@ -1,0 +1,12 @@
+# Build context is the repository root; send only what the images need.
+**/__pycache__/
+**/*.pyc
+**/.venv/
+**/venv/
+**/Dockerfile
+.git/
+.github/
+.idea/
+docs/
+*.md
+!README.md

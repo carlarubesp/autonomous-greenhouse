@@ -12,6 +12,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Architecture Decision Records in `docs/adr/` (ADR-0001 to ADR-0008).
 - Contribution guide, pull request template and issue templates.
 - This changelog.
+- uv workspace: a `pyproject.toml` per service and a single `uv.lock` with
+  pinned versions of every dependency.
+
+### Changed
+
+- Docker images install dependencies with `uv sync --frozen`, so builds are
+  reproducible. The build context is now the repository root.
+- Local run instructions use `uv sync` and `uv run`.
+
+### Removed
+
+- Per-service `requirements.txt` and `.dockerignore` files, replaced by the
+  workspace manifests and a root `.dockerignore`.
+- Unused `requests` dependency of the simulator.
 
 ## [0.1.0] - 2026-09-29
 
