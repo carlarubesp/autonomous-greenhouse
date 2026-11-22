@@ -1,22 +1,23 @@
-import paho.mqtt.client as mqtt
-import requests
-import json
 import configparser
+import json
 import os
 
+import paho.mqtt.client as mqtt
+import requests
+
 config = configparser.ConfigParser()
-config.read('../greenhouse.conf')
+config.read("../greenhouse.conf")
 
 MQTT_BROKER = os.getenv("MQTT_BROKER", config.get("mqtt_broker", "broker_name"))
 MQTT_PORT = int(os.getenv("MQTT_PORT", config.getint("mqtt_broker", "port")))
 KNOWLEDGE_HOST = os.getenv("KNOWLEDGE_HOST", config.get("knowledge", "host"))
 KNOWLEDGE_PORT = int(os.getenv("KNOWLEDGE_PORT", config.getint("knowledge", "port")))
 
-MQTT_TOPICS = [("greenhouse/analyzer/command", 0),
-               ("greenhouse/reset", 0)]
+MQTT_TOPICS = [("greenhouse/analyzer/command", 0), ("greenhouse/reset", 0)]
 
-with open("../thresholds.json", "r") as f:
+with open("../thresholds.json") as f:
     thresholds = json.load(f)
+
 
 class Planner:
     def __init__(self):
@@ -56,8 +57,9 @@ class Planner:
             else:
                 return value > high
 
-    def consider(self, actuator, metric_name, value, limits, increases,
-                 plan, claimed, reasons):
+    def consider(
+        self, actuator, metric_name, value, limits, increases, plan, claimed, reasons
+    ):
         if actuator in claimed:
             return
 
@@ -68,8 +70,7 @@ class Planner:
 
         if desired != previous:
             reasons.append(
-                f"{metric_name}={value:.2f} -> {actuator} "
-                f"{'ON' if desired else 'OFF'}"
+                f"{metric_name}={value:.2f} -> {actuator} {'ON' if desired else 'OFF'}"
             )
 
     def build_plan(self, diagnosis):
@@ -87,38 +88,110 @@ class Planner:
 
         temp = reading["temperature"]
         temp_limits = thresholds["temperature"]["day" if is_day else "night"]
-        self.consider("heater", "temperature", temp, temp_limits,
-                      increases=True, plan=plan, claimed=claimed, reasons=reasons)
-        self.consider("fan", "temperature", temp, temp_limits,
-                      increases=False, plan=plan, claimed=claimed, reasons=reasons)
+        self.consider(
+            "heater",
+            "temperature",
+            temp,
+            temp_limits,
+            increases=True,
+            plan=plan,
+            claimed=claimed,
+            reasons=reasons,
+        )
+        self.consider(
+            "fan",
+            "temperature",
+            temp,
+            temp_limits,
+            increases=False,
+            plan=plan,
+            claimed=claimed,
+            reasons=reasons,
+        )
 
         ph = reading["ph"]
-        self.consider("acid_dosing", "ph", ph, thresholds["ph"],
-                      increases=False, plan=plan, claimed=claimed, reasons=reasons)
-        self.consider("base_dosing", "ph", ph, thresholds["ph"],
-                      increases=True, plan=plan, claimed=claimed, reasons=reasons)
+        self.consider(
+            "acid_dosing",
+            "ph",
+            ph,
+            thresholds["ph"],
+            increases=False,
+            plan=plan,
+            claimed=claimed,
+            reasons=reasons,
+        )
+        self.consider(
+            "base_dosing",
+            "ph",
+            ph,
+            thresholds["ph"],
+            increases=True,
+            plan=plan,
+            claimed=claimed,
+            reasons=reasons,
+        )
 
         sh = reading["soil_humidity"]
         sh_limits = thresholds["soil_humidity"]
-        self.consider("water_pump", "soil_humidity", sh, sh_limits,
-                      increases=True, plan=plan, claimed=claimed, reasons=reasons)
-        self.consider("sprinklers", "soil_humidity", sh, sh_limits,
-                      increases=True, plan=plan, claimed=claimed, reasons=reasons)
+        self.consider(
+            "water_pump",
+            "soil_humidity",
+            sh,
+            sh_limits,
+            increases=True,
+            plan=plan,
+            claimed=claimed,
+            reasons=reasons,
+        )
+        self.consider(
+            "sprinklers",
+            "soil_humidity",
+            sh,
+            sh_limits,
+            increases=True,
+            plan=plan,
+            claimed=claimed,
+            reasons=reasons,
+        )
 
         rh = reading["relative_humidity"]
         rh_limits = thresholds["relative_humidity"]
-        self.consider("sprinklers", "relative_humidity", rh, rh_limits,
-                      increases=True, plan=plan, claimed=claimed, reasons=reasons)
+        self.consider(
+            "sprinklers",
+            "relative_humidity",
+            rh,
+            rh_limits,
+            increases=True,
+            plan=plan,
+            claimed=claimed,
+            reasons=reasons,
+        )
 
         co2 = reading["co2"]
         co2_limits = thresholds["co2"]
-        self.consider("co2_injector", "co2", co2, co2_limits,
-                      increases=True, plan=plan, claimed=claimed, reasons=reasons)
+        self.consider(
+            "co2_injector",
+            "co2",
+            co2,
+            co2_limits,
+            increases=True,
+            plan=plan,
+            claimed=claimed,
+            reasons=reasons,
+        )
 
         ce = reading["conductivity"]
         ce_limits = thresholds["conductivity"]
-        self.consider("nutrient_dosing", "conductivity", ce, ce_limits,
-                      increases=True, plan=plan, claimed=claimed, reasons=reasons)
+        self.consider(
+            "nutrient_dosing",
+            "conductivity",
+            ce,
+            ce_limits,
+            increases=True,
+            plan=plan,
+            claimed=claimed,
+            reasons=reasons,
+        )
 
         payload = {
             "clock": diagnosis["clock"],
@@ -138,6 +211,7 @@ class Planner:
         self.client.subscribe(MQTT_TOPICS)
         self.client.loop_forever()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     plan = Planner()
     plan.start()

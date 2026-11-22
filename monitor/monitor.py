@@ -1,19 +1,20 @@
-import requests
-import paho.mqtt.client as mqtt
 import configparser
 import json
 import os
 
+import paho.mqtt.client as mqtt
+import requests
+
 config = configparser.ConfigParser()
-config.read('../greenhouse.conf')
+config.read("../greenhouse.conf")
 
 MQTT_BROKER = os.getenv("MQTT_BROKER", config.get("mqtt_broker", "broker_name"))
 MQTT_PORT = int(os.getenv("MQTT_PORT", config.getint("mqtt_broker", "port")))
 KNOWLEDGE_HOST = os.getenv("KNOWLEDGE_HOST", config.get("knowledge", "host"))
 KNOWLEDGE_PORT = int(os.getenv("KNOWLEDGE_PORT", config.getint("knowledge", "port")))
 
-MQTT_TOPICS = [("greenhouse/sensors/status", 0),
-               ("greenhouse/reset", 0)]
+MQTT_TOPICS = [("greenhouse/sensors/status", 0), ("greenhouse/reset", 0)]
+
 
 class Monitor:
     def __init__(self):
@@ -42,8 +43,10 @@ class Monitor:
         print("Commanded Analyzer to start analyzing")
 
     def insert_sensors_info(self, sensors_info):
-        requests.post(url=f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/sensors",
-                      json=json.loads(sensors_info))
+        requests.post(
+            url=f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/sensors",
+            json=json.loads(sensors_info),
+        )
         print(f"{sensors_info}")
 
     def reset_knowledge(self):
@@ -58,6 +61,7 @@ class Monitor:
         self.client.connect(MQTT_BROKER, MQTT_PORT)
         self.client.subscribe(MQTT_TOPICS)
         self.client.loop_forever()
+
 
 if __name__ == "__main__":
     monitor = Monitor()

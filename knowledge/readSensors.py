@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class ReadSensors(BaseModel):
     clock: int
     is_day: bool

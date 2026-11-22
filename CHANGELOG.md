@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - This changelog.
 - uv workspace: a `pyproject.toml` per service and a single `uv.lock` with
   pinned versions of every dependency.
+- Development tooling: ruff (lint and format), mypy (types) and pre-commit
+  hooks that run them on every commit.
 
 ### Changed
 

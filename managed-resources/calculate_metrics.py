@@ -1,5 +1,6 @@
 import random
 
+
 class CalculateMetrics:
     @staticmethod
     def change_temperature(temperature, is_day, heater, fan):
@@ -19,7 +20,7 @@ class CalculateMetrics:
         return max(min(temperature + temp_change + random.uniform(-0.15, 0.15), 40), -5)
 
     @staticmethod
-    def change_rel_humidity(rel_humidity,is_day, heater, sprinklers):
+    def change_rel_humidity(rel_humidity, is_day, heater, sprinklers):
         rel_humidity_day = 55.0
         rel_humidity_night = 80.0
 
@@ -33,7 +34,9 @@ class CalculateMetrics:
         if sprinklers:
             humidity_change += 0.16
 
-        return max(min(rel_humidity + humidity_change + random.uniform(-0.2, 0.2), 100), 0)
+        return max(
+            min(rel_humidity + humidity_change + random.uniform(-0.2, 0.2), 100), 0
+        )
 
     @staticmethod
     def change_soil_humidity(soil_humidity, heater, sprinklers, water_pump):
@@ -47,7 +50,9 @@ class CalculateMetrics:
         if water_pump:
             humidity_change += 0.4
 
-        return max(min(soil_humidity + humidity_change + random.uniform(-0.2, 0.2), 100), 0)
+        return max(
+            min(soil_humidity + humidity_change + random.uniform(-0.2, 0.2), 100), 0
+        )
 
     @staticmethod
     def change_co2(co2, is_day, fan, co2_injector):
@@ -79,7 +84,7 @@ class CalculateMetrics:
         return max(min(ph + ph_change + random.uniform(-0.015, 0.015), 8.0), 0)
 
     @staticmethod
-    def change_conductivity(conductivity,nutrient_dosing, water_pump):
+    def change_conductivity(conductivity, nutrient_dosing, water_pump):
         conduct_tendency = 0.5
         conduct_change = (conduct_tendency - conductivity) * 0.08
 
@@ -88,4 +93,6 @@ class CalculateMetrics:
         if water_pump:
             conduct_change -= 0.1
 
-        return max(min(conductivity + conduct_change + random.uniform(-0.02, 0.02), 6.0), 0)
+        return max(
+            min(conductivity + conduct_change + random.uniform(-0.02, 0.02), 6.0), 0
+        )

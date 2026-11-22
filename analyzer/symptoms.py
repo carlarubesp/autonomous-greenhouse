@@ -1,6 +1,6 @@
 import json
 
-with open("../thresholds.json", "r") as f:
+with open("../thresholds.json") as f:
     thresholds = json.load(f)
 
 
@@ -15,13 +15,17 @@ def freezing_risk(info):
 
 
 def heating_risk(info):
-    return (info["temperature"] > _temp_alarm_max(info)
-            and info["soil_humidity"] < thresholds["soil_humidity"]["alarm"][0])
+    return (
+        info["temperature"] > _temp_alarm_max(info)
+        and info["soil_humidity"] < thresholds["soil_humidity"]["alarm"][0]
+    )
 
 
 def mold_risk(info):
-    return (info["temperature"] > _temp_alarm_max(info)
-            and info["soil_humidity"] > thresholds["soil_humidity"]["alarm"][1])
+    return (
+        info["temperature"] > _temp_alarm_max(info)
+        and info["soil_humidity"] > thresholds["soil_humidity"]["alarm"][1]
+    )
 
 
 symptoms = {

@@ -1,30 +1,31 @@
-import paho.mqtt.client as mqtt
-import requests
-import json
 import configparser
+import json
 import os
 
+import paho.mqtt.client as mqtt
+import requests
+
 config = configparser.ConfigParser()
-config.read('../greenhouse.conf')
+config.read("../greenhouse.conf")
 
 MQTT_BROKER = os.getenv("MQTT_BROKER", config.get("mqtt_broker", "broker_name"))
 MQTT_PORT = int(os.getenv("MQTT_PORT", config.getint("mqtt_broker", "port")))
 KNOWLEDGE_HOST = os.getenv("KNOWLEDGE_HOST", config.get("knowledge", "host"))
 KNOWLEDGE_PORT = int(os.getenv("KNOWLEDGE_PORT", config.getint("knowledge", "port")))
 
-MQTT_TOPICS = [("greenhouse/planner/plan", 0),
-               ("greenhouse/reset", 0)]
+MQTT_TOPICS = [("greenhouse/planner/plan", 0), ("greenhouse/reset", 0)]
 
 ACTUATOR_COMMANDS = {
-    "heater":          ("HEATER_ON",          "HEATER_OFF"),
-    "fan":             ("FAN_ON",             "FAN_OFF"),
-    "sprinklers":      ("SPRINKLERS_ON",      "SPRINKLERS_OFF"),
-    "co2_injector":    ("CO2_ON",             "CO2_OFF"),
-    "water_pump":      ("WATER_PUMP_ON",      "WATER_PUMP_OFF"),
-    "acid_dosing":     ("ACID_DOSING_ON",     "ACID_DOSING_OFF"),
-    "base_dosing":     ("BASE_DOSING_ON",     "BASE_DOSING_OFF"),
-    "nutrient_dosing": ("NUTRIENT_ON",        "NUTRIENT_OFF"),
+    "heater": ("HEATER_ON", "HEATER_OFF"),
+    "fan": ("FAN_ON", "FAN_OFF"),
+    "sprinklers": ("SPRINKLERS_ON", "SPRINKLERS_OFF"),
+    "co2_injector": ("CO2_ON", "CO2_OFF"),
+    "water_pump": ("WATER_PUMP_ON", "WATER_PUMP_OFF"),
+    "acid_dosing": ("ACID_DOSING_ON", "ACID_DOSING_OFF"),
+    "base_dosing": ("BASE_DOSING_ON", "BASE_DOSING_OFF"),
+    "nutrient_dosing": ("NUTRIENT_ON", "NUTRIENT_OFF"),
 }
+
 
 class Executor:
     def __init__(self):
@@ -50,8 +51,9 @@ class Executor:
         return response.json()
 
     def update_actuators(self, changes):
-        return requests.post(f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/actuators",
-                      json=changes)
+        return requests.post(
+            f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/actuators", json=changes
+        )
 
     def execute(self, payload):
         plan = payload.get("plan", {})
@@ -86,6 +88,7 @@ class Executor:
         self.client.subscribe(MQTT_TOPICS)
         self.client.loop_forever()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     executor = Executor()
     executor.start()
