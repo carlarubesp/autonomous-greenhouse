@@ -1,25 +1,27 @@
-import paho.mqtt.client as mqtt
-import requests
-import json
 import configparser
-from symptoms import symptoms
+import json
 import os
 
+import paho.mqtt.client as mqtt
+import requests
+
+from symptoms import symptoms
+
 config = configparser.ConfigParser()
-config.read('../greenhouse.conf')
+config.read("../greenhouse.conf")
 
 MQTT_BROKER = os.getenv("MQTT_BROKER", config.get("mqtt_broker", "broker_name"))
 MQTT_PORT = int(os.getenv("MQTT_PORT", config.getint("mqtt_broker", "port")))
 KNOWLEDGE_HOST = os.getenv("KNOWLEDGE_HOST", config.get("knowledge", "host"))
 KNOWLEDGE_PORT = int(os.getenv("KNOWLEDGE_PORT", config.getint("knowledge", "port")))
 
-MQTT_TOPICS = [("greenhouse/monitor/command", 0),
-               ("greenhouse/reset", 0)]
+MQTT_TOPICS = [("greenhouse/monitor/command", 0), ("greenhouse/reset", 0)]
 
-with open("../thresholds.json", "r") as f:
+with open("../thresholds.json") as f:
     thresholds = json.load(f)
 
 TREND_THRESHOLD = 0.1
+
 
 class Analyzer:
     def __init__(self):
@@ -34,7 +36,7 @@ class Analyzer:
             client.reconnect_delay_set(min_delay=1, max_delay=30)
 
     def on_message(self, client, userdata, message):
-        msg = message.payload.decode('utf-8').strip()
+        msg = message.payload.decode("utf-8").strip()
 
         if message.topic == "greenhouse/monitor/command" and msg == "start":
             diagnosis = self.analyze()
@@ -190,6 +192,7 @@ class Analyzer:
         self.client.on_message = self.on_message
         self.client.subscribe(MQTT_TOPICS)
         self.client.loop_forever()
+
 
 if __name__ == "__main__":
     analyzer = Analyzer()

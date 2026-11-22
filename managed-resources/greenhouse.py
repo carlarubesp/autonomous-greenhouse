@@ -1,20 +1,23 @@
-import time
-import json
-import random
 import configparser
-import paho.mqtt.client as mqtt
-from calculate_metrics import CalculateMetrics
+import json
 import os
+import random
+import time
+
+import paho.mqtt.client as mqtt
+
+from calculate_metrics import CalculateMetrics
 
 # Load IPs and ports from a static file
 config = configparser.ConfigParser()
-config.read('../greenhouse.conf')
+config.read("../greenhouse.conf")
 
 MQTT_BROKER = os.getenv("MQTT_BROKER", config.get("mqtt_broker", "broker_name"))
 MQTT_PORT = int(os.getenv("MQTT_PORT", config.getint("mqtt_broker", "port")))
 
 # Seed for reproducibility
 random.seed(42)
+
 
 class Greenhouse:
     def __init__(self):
@@ -84,7 +87,6 @@ class Greenhouse:
             self.conductivity, self.nutrient_dosing, self.water_pump
         )
 
-
     def read_sensors(self):
         return {
             "clock": self.clock,
@@ -94,7 +96,7 @@ class Greenhouse:
             "soil_humidity": round(self.soil_humidity, 2),
             "co2": round(self.co2, 2),
             "ph": round(self.ph, 2),
-            "conductivity": round(self.conductivity, 2)
+            "conductivity": round(self.conductivity, 2),
         }
 
     def apply_action(self, action):
@@ -151,6 +153,7 @@ class Greenhouse:
             latest_data = self.read_sensors()
             client.publish("greenhouse/sensors/status", json.dumps(latest_data))
             time.sleep(0.5)
+
 
 if __name__ == "__main__":
     simulator = Greenhouse()
