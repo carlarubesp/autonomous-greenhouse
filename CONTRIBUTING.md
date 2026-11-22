@@ -58,6 +58,24 @@ The project follows [Semantic Versioning](https://semver.org/).
 A phase is complete when CI is green, `docker compose up` starts cleanly and
 the reference scenario runs. Every release updates [`CHANGELOG.md`](CHANGELOG.md).
 
+## Development setup
+
+```bash
+uv sync --all-packages
+uv run pre-commit install
+```
+
+Every commit then runs the same checks as CI:
+
+| Check | Command |
+|---|---|
+| Lint (ruff) | `uv run ruff check .` |
+| Format (ruff) | `uv run ruff format .` |
+| Types (mypy) | `scripts/typecheck.sh` |
+| Lockfile in sync | `uv lock --check` |
+
+To run every hook on the whole repository: `uv run pre-commit run --all-files`.
+
 ## Running the project
 
 ```bash
