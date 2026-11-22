@@ -18,7 +18,7 @@ app = FastAPI(title="Knowledge")
 with open("../thresholds.json") as f:
     thresholds = json.load(f)
 
-short_term_memory = []
+short_term_memory: list[ReadSensors] = []
 actuators_state = {
     "heater": False,
     "fan": False,

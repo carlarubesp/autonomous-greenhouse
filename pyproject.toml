@@ -52,6 +52,9 @@ select = [
     "B",   # bugbear
     "SIM", # simplify
 ]
+# The simulator models each metric as an explicit day/night if-else; keep that
+# shape instead of one-line conditional expressions.
+ignore = ["SIM108"]
 
 [tool.mypy]
 python_version = "3.12"
