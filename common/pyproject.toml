@@ -1,0 +1,13 @@
+[project]
+name = "greenhouse-common"
+version = "0.1.0"
+description = "Shared configuration, MQTT and Knowledge clients and logging for the greenhouse services."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "paho-mqtt>=2.2,<3",
+    "requests>=2.34,<3",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.9,<0.14"]
+build-backend = "uv_build"

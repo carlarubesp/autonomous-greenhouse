@@ -4,8 +4,11 @@ version = "0.1.0"
 description = "Greenhouse simulator: sensors and actuators over MQTT."
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "paho-mqtt>=2.2,<3",
+    "greenhouse-common",
 ]
 
 [tool.uv]
 package = false
+
+[tool.uv.sources]
+greenhouse-common = { workspace = true }

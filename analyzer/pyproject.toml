@@ -4,9 +4,11 @@ version = "0.1.0"
 description = "MAPE-K Analyzer: detects alarms, symptoms and trends."
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "paho-mqtt>=2.2,<3",
-    "requests>=2.34,<3",
+    "greenhouse-common",
 ]
 
 [tool.uv]
 package = false
+
+[tool.uv.sources]
+greenhouse-common = { workspace = true }

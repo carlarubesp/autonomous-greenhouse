@@ -52,6 +52,13 @@ components on a single bridge network. Configuration files
 (`greenhouse.conf` and `thresholds.json`) are mounted as volumes, so
 they can be edited without rebuilding the images.
 
+Logs go to `docker compose logs`. Set `LOG_LEVEL=DEBUG` to also see every
+reading and every unchanged plan:
+
+```bash
+LOG_LEVEL=DEBUG docker compose up
+```
+
 To stop everything:
 
 ```bash
@@ -111,6 +118,7 @@ docker compose down
 
     autonomous-greenhouse/
     ├── analyzer/              # MAPE-K Analyzer
+    ├── common/                # Shared package: settings, MQTT and Knowledge clients, logging
     ├── docs/                  # Design document (Typst source + PDF)
     ├── executor/              # MAPE-K Executor
     ├── knowledge/             # FastAPI knowledge base

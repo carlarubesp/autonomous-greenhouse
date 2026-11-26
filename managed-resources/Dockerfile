@@ -9,11 +9,13 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_PROJECT_ENVIRONMENT=/opt/venv \
     PATH="/opt/venv/bin:$PATH"
 
-# Dependencies first, so this layer is cached until the lockfile changes.
+# Dependencies first (including the shared package), so this layer is cached
+# until the lockfile or the shared package changes.
 WORKDIR /src
 COPY pyproject.toml uv.lock ./
+COPY common/ common/
 COPY managed-resources/pyproject.toml managed-resources/
-RUN uv sync --frozen --no-dev --package greenhouse-simulator
+RUN uv sync --frozen --no-dev --no-editable --package greenhouse-simulator
 
 WORKDIR /app
 COPY managed-resources/ .
