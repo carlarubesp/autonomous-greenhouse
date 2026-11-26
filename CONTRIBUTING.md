@@ -74,6 +74,8 @@ Every commit then runs the same checks as CI:
 | Types (mypy) | `scripts/typecheck.sh` |
 | Lockfile in sync | `uv lock --check` |
 
+Tests are not a pre-commit hook; run them with `uv run pytest`.
+
 To run every hook on the whole repository: `uv run pre-commit run --all-files`.
 
 ## Running the project
