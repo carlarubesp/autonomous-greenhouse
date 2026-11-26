@@ -18,10 +18,10 @@ MQTT_TOPICS = [("greenhouse/sensors/status", 0), ("greenhouse/reset", 0)]
 
 class Monitor:
     def __init__(self):
-        self.client = mqtt.Client()
+        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 
-    def on_connect(self, client, userdata, flags, rc):
-        if rc == 0:
+    def on_connect(self, client, userdata, flags, reason_code, properties):
+        if not reason_code.is_failure:
             print("Connected to broker.")
         else:
             print("Connection failed.")
