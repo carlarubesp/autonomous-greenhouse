@@ -1,7 +1,6 @@
-import json
+from greenhouse_common.config import load_thresholds
 
-with open("../thresholds.json") as f:
-    thresholds = json.load(f)
+thresholds = load_thresholds()
 
 
 def _temp_alarm_max(info):

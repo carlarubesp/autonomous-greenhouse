@@ -1,24 +1,18 @@
-import configparser
 import json
-import os
 
-import paho.mqtt.client as mqtt
-import requests
-
+from greenhouse_common.config import load_settings, load_thresholds
+from greenhouse_common.knowledge import KnowledgeClient
+from greenhouse_common.log import setup_logging
+from greenhouse_common.mqtt import connect, create_client
 from symptoms import symptoms
 
-config = configparser.ConfigParser()
-config.read("../greenhouse.conf")
+log = setup_logging("analyzer")
+settings = load_settings()
+topics = settings.topics
 
-MQTT_BROKER = os.getenv("MQTT_BROKER", config.get("mqtt_broker", "broker_name"))
-MQTT_PORT = int(os.getenv("MQTT_PORT", config.getint("mqtt_broker", "port")))
-KNOWLEDGE_HOST = os.getenv("KNOWLEDGE_HOST", config.get("knowledge", "host"))
-KNOWLEDGE_PORT = int(os.getenv("KNOWLEDGE_PORT", config.getint("knowledge", "port")))
+MQTT_TOPICS = [(topics.monitor_command, 0), (topics.reset, 0)]
 
-MQTT_TOPICS = [("greenhouse/monitor/command", 0), ("greenhouse/reset", 0)]
-
-with open("../thresholds.json") as f:
-    thresholds = json.load(f)
+thresholds = load_thresholds()
 
 TREND_THRESHOLD = 0.1
 
@@ -26,38 +20,37 @@ TREND_THRESHOLD = 0.1
 class Analyzer:
     def __init__(self):
         self.last_avg = None
-        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        self.client = create_client()
+        self.knowledge = KnowledgeClient(settings.knowledge_url)
 
     # The callback for when the client receives a CONNACK response from the server.
     def on_connect(self, client, userdata, flags, reason_code, properties):
         if not reason_code.is_failure:
-            print("Connected to broker.")
+            log.info("Connected to broker.")
         else:
             client.reconnect_delay_set(min_delay=1, max_delay=30)
 
     def on_message(self, client, userdata, message):
         msg = message.payload.decode("utf-8").strip()
 
-        if message.topic == "greenhouse/monitor/command" and msg == "start":
+        if message.topic == topics.monitor_command and msg == "start":
             diagnosis = self.analyze()
             if diagnosis:
-                print("Information analyzed and classified.")
+                log.debug("Information analyzed and classified.")
                 self.command_planner(diagnosis)
 
-        elif message.topic == "greenhouse/reset":
+        elif message.topic == topics.reset:
             self.reset_knowledge()
-            print("Knowledge reset")
+            log.info("Knowledge reset")
 
     def command_planner(self, diagnosis):
-        self.client.publish("greenhouse/analyzer/command", json.dumps(diagnosis))
-        print("Commanded Planner to start planning")
+        self.client.publish(topics.analyzer_command, json.dumps(diagnosis))
+        log.debug("Commanded Planner to start planning")
 
     def get_sensors_info(self):
         # Returns the short-term memory list that compiles together
         # all the sensors until that point
-        sensors_info = f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/short-term"
-        response = requests.get(sensors_info)
-        return response.json()
+        return self.knowledge.get_short_term()
 
     def check_sensors(self, sensors_info):
         if not sensors_info:
@@ -78,7 +71,13 @@ class Analyzer:
                 alarm_min, alarm_max = limits["alarm"]
 
             if value > alarm_max or value < alarm_min:
-                print(f"ALARM: {metric}={value} outside of [{alarm_min}, {alarm_max}]")
+                log.warning(
+                    "ALARM: %s=%s outside of [%s, %s]",
+                    metric,
+                    value,
+                    alarm_min,
+                    alarm_max,
+                )
                 return True
 
         return False
@@ -152,28 +151,30 @@ class Analyzer:
         return trends
 
     def reset_knowledge(self):
-        requests.post(url=f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/short-term/reset")
-        print("Knowledge reset")
+        self.knowledge.reset_short_term()
+        log.info("Knowledge reset")
 
     def analyze(self):
         sensors_info = self.get_sensors_info()
         if not sensors_info:
-            print("No sensor data available.")
+            log.info("No sensor data available.")
             return None
 
         last = sensors_info[-1]
 
         has_alarm = self.check_sensors(sensors_info)
         if has_alarm:
-            print("Alarm state reached. There is a metric completely out of range.")
+            log.warning(
+                "Alarm state reached. There is a metric completely out of range."
+            )
 
         symptoms = self.check_symptoms(sensors_info)
         if symptoms:
-            print("Symptoms detected: ", symptoms)
+            log.info("Symptoms detected: %s", symptoms)
 
         trends = self.check_tendency(sensors_info)
         if trends:
-            print("Tendency detected: ", trends)
+            log.info("Tendency detected: %s", trends)
 
         diagnosis = {
             "clock": last["clock"],
@@ -187,7 +188,7 @@ class Analyzer:
         return diagnosis
 
     def start(self):
-        self.client.connect(MQTT_BROKER, MQTT_PORT)
+        connect(self.client, settings)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.client.subscribe(MQTT_TOPICS)
