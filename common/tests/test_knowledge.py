@@ -60,4 +60,8 @@ def test_actuators_round_trip() -> None:
 
     assert client.get_actuators() == {"fan": True}
     assert client.update_actuators({"fan": True}) == {"fan": True}
-    assert session.calls[1] == ("POST", "http://knowledge:5000/actuators", {"fan": True})
+    assert session.calls[1] == (
+        "POST",
+        "http://knowledge:5000/actuators",
+        {"fan": True},
+    )

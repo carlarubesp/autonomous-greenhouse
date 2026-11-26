@@ -1,64 +1,58 @@
-import configparser
 import json
-import os
 
-import paho.mqtt.client as mqtt
-import requests
+from greenhouse_common.config import load_settings
+from greenhouse_common.knowledge import KnowledgeClient
+from greenhouse_common.log import setup_logging
+from greenhouse_common.mqtt import connect, create_client
 
-config = configparser.ConfigParser()
-config.read("../greenhouse.conf")
+log = setup_logging("monitor")
+settings = load_settings()
+topics = settings.topics
 
-MQTT_BROKER = os.getenv("MQTT_BROKER", config.get("mqtt_broker", "broker_name"))
-MQTT_PORT = int(os.getenv("MQTT_PORT", config.getint("mqtt_broker", "port")))
-KNOWLEDGE_HOST = os.getenv("KNOWLEDGE_HOST", config.get("knowledge", "host"))
-KNOWLEDGE_PORT = int(os.getenv("KNOWLEDGE_PORT", config.getint("knowledge", "port")))
-
-MQTT_TOPICS = [("greenhouse/sensors/status", 0), ("greenhouse/reset", 0)]
+MQTT_TOPICS = [(topics.sensors_status, 0), (topics.reset, 0)]
 
 
 class Monitor:
     def __init__(self):
-        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        self.client = create_client()
+        self.knowledge = KnowledgeClient(settings.knowledge_url)
 
     def on_connect(self, client, userdata, flags, reason_code, properties):
         if not reason_code.is_failure:
-            print("Connected to broker.")
+            log.info("Connected to broker.")
         else:
-            print("Connection failed.")
+            log.error("Connection failed.")
 
     def on_message(self, client, userdata, message):
         msg = message.payload.decode("utf-8")
 
-        if message.topic == "greenhouse/sensors/status":
+        if message.topic == topics.sensors_status:
             self.insert_sensors_info(msg)
-            print("Sensors info inserted")
+            log.debug("Sensors info inserted")
             self.command_analyzer()
 
-        elif message.topic == "greenhouse/reset":
+        elif message.topic == topics.reset:
             self.reset_knowledge()
-            print("Knowledge reset")
+            log.info("Knowledge reset")
 
     def command_analyzer(self):
-        self.client.publish("greenhouse/monitor/command", "start")
-        print("Commanded Analyzer to start analyzing")
+        self.client.publish(topics.monitor_command, "start")
+        log.debug("Commanded Analyzer to start analyzing")
 
     def insert_sensors_info(self, sensors_info):
-        requests.post(
-            url=f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/sensors",
-            json=json.loads(sensors_info),
-        )
-        print(f"{sensors_info}")
+        self.knowledge.add_reading(json.loads(sensors_info))
+        log.debug("Reading: %s", sensors_info)
 
     def reset_knowledge(self):
-        requests.post(url=f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/short-term/reset")
-        print("Knowledge reset")
+        self.knowledge.reset_short_term()
+        log.info("Knowledge reset")
 
     def start(self):
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
 
         # Connect to the mqtt broker
-        self.client.connect(MQTT_BROKER, MQTT_PORT)
+        connect(self.client, settings)
         self.client.subscribe(MQTT_TOPICS)
         self.client.loop_forever()
 

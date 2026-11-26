@@ -10,3 +10,4 @@
 docs/
 *.md
 !README.md
+common/tests/
