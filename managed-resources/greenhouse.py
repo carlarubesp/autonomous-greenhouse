@@ -43,13 +43,15 @@ class Greenhouse:
         self.base_dosing = False
         self.nutrient_dosing = False
 
-    def on_connect(self, client, userdata, flags, rc):
-        print("\nConnected with result code " + str(rc))
+    def on_connect(self, client, userdata, flags, reason_code, properties):
+        print("\nConnected with result code " + str(reason_code))
 
-    def on_disconnect(self, client, userdata, rc):
-        if rc != 0:
+    def on_disconnect(
+        self, client, userdata, disconnect_flags, reason_code, properties
+    ):
+        if reason_code.is_failure:
             print("Unexpected disconnection.")
-        elif rc == 0:
+        else:
             print("Disconnected successfully.")
 
     def on_message(self, client, userdata, msg):
@@ -141,7 +143,7 @@ class Greenhouse:
             self.nutrient_dosing = False
 
     def start(self):
-        client = mqtt.Client()
+        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         client.on_message = self.on_message
 
         client.connect(MQTT_BROKER, MQTT_PORT)

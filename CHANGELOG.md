@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docker images install dependencies with `uv sync --frozen`, so builds are
   reproducible. The build context is now the repository root.
 - Local run instructions use `uv sync` and `uv run`.
+- MQTT clients use the paho-mqtt callback API version 2 (the deprecated
+  version 1 warning is gone from the logs).
 
 ### Removed
 
