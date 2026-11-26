@@ -301,15 +301,11 @@ name = "greenhouse-planner"
 version = "0.1.0"
 source = { virtual = "planner" }
 dependencies = [
-    { name = "paho-mqtt" },
-    { name = "requests" },
+    { name = "greenhouse-common" },
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "paho-mqtt", specifier = ">=2.2,<3" },
-    { name = "requests", specifier = ">=2.34,<3" },
-]
+requires-dist = [{ name = "greenhouse-common", editable = "common" }]
 
 [[package]]
 name = "greenhouse-simulator"

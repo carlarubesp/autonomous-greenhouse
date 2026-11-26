@@ -1,46 +1,40 @@
-import configparser
 import json
-import os
 
-import paho.mqtt.client as mqtt
-import requests
+from greenhouse_common.config import load_settings, load_thresholds
+from greenhouse_common.knowledge import KnowledgeClient
+from greenhouse_common.log import setup_logging
+from greenhouse_common.mqtt import connect, create_client
 
-config = configparser.ConfigParser()
-config.read("../greenhouse.conf")
+log = setup_logging("planner")
+settings = load_settings()
+topics = settings.topics
 
-MQTT_BROKER = os.getenv("MQTT_BROKER", config.get("mqtt_broker", "broker_name"))
-MQTT_PORT = int(os.getenv("MQTT_PORT", config.getint("mqtt_broker", "port")))
-KNOWLEDGE_HOST = os.getenv("KNOWLEDGE_HOST", config.get("knowledge", "host"))
-KNOWLEDGE_PORT = int(os.getenv("KNOWLEDGE_PORT", config.getint("knowledge", "port")))
+MQTT_TOPICS = [(topics.analyzer_command, 0), (topics.reset, 0)]
 
-MQTT_TOPICS = [("greenhouse/analyzer/command", 0), ("greenhouse/reset", 0)]
-
-with open("../thresholds.json") as f:
-    thresholds = json.load(f)
+thresholds = load_thresholds()
 
 
 class Planner:
     def __init__(self):
-        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        self.client = create_client()
+        self.knowledge = KnowledgeClient(settings.knowledge_url)
 
     def on_connect(self, client, userdata, flags, reason_code, properties):
         if not reason_code.is_failure:
-            print("Connected to broker.")
+            log.info("Connected to broker.")
         else:
             client.reconnect_delay_set(min_delay=1, max_delay=30)
 
     def on_message(self, client, userdata, message):
-        if message.topic == "greenhouse/analyzer/command":
+        if message.topic == topics.analyzer_command:
             diagnosis = json.loads(message.payload.decode("utf-8"))
             self.build_plan(diagnosis)
 
-        elif message.topic == "greenhouse/reset":
-            print("Planner received reset.")
+        elif message.topic == topics.reset:
+            log.info("Planner received reset.")
 
     def get_actuators(self):
-        actuators_info = f"http://{KNOWLEDGE_HOST}:{KNOWLEDGE_PORT}/actuators"
-        response = requests.get(actuators_info)
-        return response.json()
+        return self.knowledge.get_actuators()
 
     def apply_hysteresis(self, current_state, value, limits, increases):
         low, high = limits["secure"]
@@ -79,7 +73,7 @@ class Planner:
 
         current = self.get_actuators()
         if current is None:
-            print("Could not read actuator state, skipping plan.")
+            log.error("Could not read actuator state, skipping plan.")
             return
 
         plan = dict(current)
@@ -198,14 +192,14 @@ class Planner:
             "plan": plan,
             "reasons": reasons,
         }
-        self.client.publish("greenhouse/planner/plan", json.dumps(payload))
+        self.client.publish(topics.planner_plan, json.dumps(payload))
         if reasons:
-            print(f"Plan at clock {diagnosis['clock']}: {reasons}")
+            log.info("Plan at clock %s: %s", diagnosis["clock"], reasons)
         else:
-            print(f"Plan at clock {diagnosis['clock']}: no changes")
+            log.debug("Plan at clock %s: no changes", diagnosis["clock"])
 
     def start(self):
-        self.client.connect(MQTT_BROKER, MQTT_PORT)
+        connect(self.client, settings)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.client.subscribe(MQTT_TOPICS)
