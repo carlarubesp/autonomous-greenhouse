@@ -1,19 +1,15 @@
-import configparser
 import json
-import os
 import random
 import time
 
-import paho.mqtt.client as mqtt
-
 from calculate_metrics import CalculateMetrics
+from greenhouse_common.config import load_settings
+from greenhouse_common.log import setup_logging
+from greenhouse_common.mqtt import connect, create_client
 
-# Load IPs and ports from a static file
-config = configparser.ConfigParser()
-config.read("../greenhouse.conf")
-
-MQTT_BROKER = os.getenv("MQTT_BROKER", config.get("mqtt_broker", "broker_name"))
-MQTT_PORT = int(os.getenv("MQTT_PORT", config.getint("mqtt_broker", "port")))
+log = setup_logging("simulator")
+settings = load_settings()
+topics = settings.topics
 
 # Seed for reproducibility
 random.seed(42)
@@ -44,20 +40,20 @@ class Greenhouse:
         self.nutrient_dosing = False
 
     def on_connect(self, client, userdata, flags, reason_code, properties):
-        print("\nConnected with result code " + str(reason_code))
+        log.info("Connected with result code %s", reason_code)
 
     def on_disconnect(
         self, client, userdata, disconnect_flags, reason_code, properties
     ):
         if reason_code.is_failure:
-            print("Unexpected disconnection.")
+            log.warning("Unexpected disconnection.")
         else:
-            print("Disconnected successfully.")
+            log.info("Disconnected successfully.")
 
     def on_message(self, client, userdata, msg):
         topic = msg.topic
 
-        if topic == "greenhouse/actuators/commands":
+        if topic == topics.actuator_commands:
             self.apply_action(msg.payload.decode("utf-8"))
 
     def next(self):
@@ -143,17 +139,17 @@ class Greenhouse:
             self.nutrient_dosing = False
 
     def start(self):
-        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        client = create_client()
         client.on_message = self.on_message
 
-        client.connect(MQTT_BROKER, MQTT_PORT)
-        client.subscribe("greenhouse/actuators/commands")
+        connect(client, settings)
+        client.subscribe(topics.actuator_commands)
         client.loop_start()
 
         while True:
             self.next()
             latest_data = self.read_sensors()
-            client.publish("greenhouse/sensors/status", json.dumps(latest_data))
+            client.publish(topics.sensors_status, json.dumps(latest_data))
             time.sleep(0.5)
 
 
