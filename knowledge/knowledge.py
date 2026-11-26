@@ -1,22 +1,15 @@
-import configparser
-import json
-import os
-
 import uvicorn
 from fastapi import FastAPI
 
+from greenhouse_common.config import load_settings, load_thresholds
 from readSensors import ReadSensors
 from updateActuators import UpdateActuators
 
-config = configparser.ConfigParser()
-config.read("../greenhouse.conf")
-
-PORT = int(os.getenv("KNOWLEDGE_PORT", config.getint("knowledge", "port")))
+settings = load_settings()
 
 app = FastAPI(title="Knowledge")
 
-with open("../thresholds.json") as f:
-    thresholds = json.load(f)
+thresholds = load_thresholds()
 
 short_term_memory: list[ReadSensors] = []
 actuators_state = {
@@ -67,4 +60,4 @@ def reset():
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=PORT)
+    uvicorn.run(app, host="0.0.0.0", port=settings.knowledge_port)

@@ -270,6 +270,7 @@ version = "0.1.0"
 source = { virtual = "knowledge" }
 dependencies = [
     { name = "fastapi" },
+    { name = "greenhouse-common" },
     { name = "pydantic" },
     { name = "uvicorn" },
 ]
@@ -277,6 +278,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.165,<1" },
+    { name = "greenhouse-common", editable = "common" },
     { name = "pydantic", specifier = ">=2.14,<3" },
     { name = "uvicorn", specifier = ">=0.54,<1" },
 ]
